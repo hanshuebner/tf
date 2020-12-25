@@ -1,0 +1,22 @@
+{
+  "name": "tfsprites",
+  "version": "1.0.0",
+  "description": "Convert piskel sprites to TurboForth blocks file",
+  "main": "index.js",
+  "watch": {
+    "build": "*"
+  },
+  "scripts": {
+    "build": "node index.js",
+    "watch": "run-when-changed --watch '*' --exec 'node index.js'"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.6",
+    "pngjs": "^6.0.0"
+  },
+  "devDependencies": {
+    "run-when-changed": "^2.1.0"
+  }
+}
