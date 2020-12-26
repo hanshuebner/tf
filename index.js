@@ -126,7 +126,7 @@ stringToBlocks(`\\ Directory -*- Forth-Block -*-
 
 const sourceBuffer = makeSourceBuffer(sourceFilename);
 if (sourceBuffer.length > libScreen * 1024) {
-    throw new Error("Too many SOURCE screens");
+    throw new Error("Too many source screens");
 }
 console.log(Math.ceil(sourceBuffer.length / 1024), 'SOURCE screens')
 sourceBuffer.copy(blocksBuffer, 1024);

@@ -1,16 +1,26 @@
 PAGE
 .( Loading WITCH )
-80 CLOAD LOCALS{
-\ Constrain sprite movement
-: movement-ok? ( dy dx y x -- flag )
-    locals{ dy dx y x } set x set y set dx set dy
-    x 0= dx -1 = and x 233 = dx 1 = and or
-    y 0= dy -1 = and or y 160 = dy 1 = and or not ;
+80 load
 
-\ Process Joystick
-: joydir ( sprite# -- )
-    locals{ sprite# } set sprite#
-    sprite# joyst dup
+: axis-ok? ( delta value max -- flag )
+    >r
+    2dup r> = swap 1 = and              \ delta value flag
+    if
+        2drop false
+    else
+        0= swap -1 = and not
+    then ;
+
+: movement-ok? ( dy dx y x -- flag )
+    rot swap                            \ dy y dx x
+    240 axis-ok? if
+        160 axis-ok?
+    else
+        2drop false
+    then ;
+
+: joyvec ( sprite# -- dy dx )
+    joyst dup
     24 and case
         16 of -1 endof
         8 of 1 endof
@@ -18,11 +28,15 @@ PAGE
     swap 6 and case
         2 of -1 endof
         4 of 1 endof
-        0 endcase
-    2dup sprite# sprloc? movement-ok? not if
+        0 endcase ;
+
+: joydir ( sprite# -- )
+    dup >r
+    r@ joyvec
+    2dup r> sprloc? movement-ok? not if
         2drop 0 0
     then
-    sprite# -rot sprvec ;
+    sprvec ;
 
 \ Load character set and sprites from binary blocks
 variable char-buffer 6 allot
