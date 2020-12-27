@@ -2,6 +2,8 @@ PAGE
 .( Loading WITCH )
 80 load
 
+$8379 constant vdptimer
+
 : axis-ok? ( delta value max -- flag )
     >r
     2dup r> = swap 1 = and              \ delta value flag
@@ -30,14 +32,14 @@ PAGE
         4 of 1 endof
         0 endcase ;
 
-: joydir* ( sprite# -- )
+: joydir ( sprite# -- )
     dup >r
     r@ joyvec
     2dup r> sprloc? movement-ok? not if
         2drop 0 0
     then
     sprvec ;
-: joydir ( sprite# -- )
+: joydir* ( sprite# -- )
     dup joyvec sprvec ;
     
 
@@ -59,29 +61,67 @@ variable char-buffer 6 allot
     97 load-chars 1 gmode 2 magnify page
     0 70 70 0 1 sprite 1 100 100 0 3 sprite ;
 
-$A6 value cookie-char
-: place-cookies ( -- )
-    10 10 gotoxy
-    cookie-char emit
-;
+$A6 value gate-char
+22 value wall-height
+variable gates 3 cells allot
+variable gate-width 5 gate-width !
+variable gate-speed 10 gate-speed !
 
-$8379 constant vdptimer
+: gate@ ( n -- v ) cells gates + @ ;
+: gate! ( v n -- ) cells gates + ! ;
+: gate-x ( n -- ) 8 * 3 + ;
+: place-gate ( n -- )
+    >r
+    wall-height rnd r@ gate!
+    0 r@ gate-x gate-char wall-height vchar
+    r@ dup gate@ dup gate-width @ + swap do
+        dup gate-x i wall-height mod gotoxy space
+    loop
+    drop r> drop ;
+
+: place-gates ( -- )
+    4 0 do i place-gate loop ;
+
+: gate-cycle ( -- n )
+    vdptimer c@ gate-speed @ mod ;
+
+: update-gate ( n -- )
+    >r
+    r@ 1 and if
+        r@ gate@
+        dup r@ gate-x swap gotoxy gate-char emit
+        dup gate-width @ + wall-height mod r@ gate-x swap gotoxy space
+        1+
+    else
+        r@ gate@
+        dup r@ gate-x swap gotoxy space
+        dup gate-width @ +  wall-height mod r@ gate-x swap gotoxy gate-char emit
+        1-
+    then
+    wall-height mod r@ gate!
+    r> drop ;
+
+: update-gates ( -- )
+    4 0 do i update-gate loop ;
+
+: sprite-cycle ( -- n )
+    vdptimer c@ 3 >> 3 and 2 << ;
 
 : process-sprites ( -- )
     0 joydir 1 joydir
     0 2 sprmov
-    vdptimer c@ 3 >> 3 and 2 <<
+    sprite-cycle
     dup 0 swap sprpat 1 swap sprpat ;
 
 : display-status ( -- )
-    0 0 32 32 hchar
+    23 0 32 32 hchar
     2 0 do
-        i 8 * 0 gotoxy
-        cookie-char $f i undersprite if
-            ." cookie! "
+        i 8 * 23 gotoxy
+        gate-char $f i undersprite if
+            ." gate! "
         then
     loop
-    16 0 gotoxy
+    16 23 gotoxy
     16 0 1 coinc if
         ." Touch! "
     then ;
@@ -89,42 +129,17 @@ $8379 constant vdptimer
 \ Main Game Loop
 : witch ( -- )
     init-graphics
-    place-cookies
+    place-gates
     begin
         process-sprites
         display-status
-        key? 32 = if leave then
-    again ;
-
-.( Type WITCH to run the game )
-
-\ undersprite demo
-: usd-sprite ( -- )
-    data 8 $ff80 $8080 $8080 $8080 $8080 $8080 $8080 $80ff 256
-    dchar
-    data 8 $ff01 $0101 $0101 $0101 $0101 $0101 $0101 $01ff 258
-    dchar ;
-
-17 17 value sy value sx
-
-: usd ( -- )
-    1 gmode usd-sprite 2 magnify
-    256 0 do i emit loop
-    0 sy sx 0 9 sprite
-    8 23 gotoxy ." Looking for * character"
-    begin
-        0 sy sx sprloc
-        42 15 0 underSprite
-        0 23 gotoxy $.
-        0 joyst case
-            16 of -1 +to sy false endof
-            8 of 1 +to sy false endof
-            2 of -1 +to sx false endof
-            4 of 1 +to sx false endof
-            1 of true endof
-            dup of false endof
+        gate-cycle 0= if update-gates then
+        key? case
+            32 of leave endof
+            ascii + of 1 gate-speed +! endof
+            ascii - of -1 gate-speed +! endof
         endcase
-    until ;
+    again ;
 
 \ PETSCI experiments
 \ 130 | 131 - 137 tr 138 bl 139 br 149 tl
@@ -157,3 +172,6 @@ $8379 constant vdptimer
         then
     loop
     decimal ;
+
+.( Type WITCH to run the game )
+
