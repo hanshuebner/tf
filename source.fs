@@ -85,19 +85,23 @@ variable gate-speed 10 gate-speed !
 : gate-cycle ( -- n )
     vdptimer c@ gate-speed @ mod ;
 
+: gate-xy ( n -- x y )
+    dup gate-x
+    swap gate@ ;
+
+: gate-end-y ( n -- y' )
+    gate@ gate-width @ + wall-height mod ;
+
 : update-gate ( n -- )
     >r
     r@ 1 and if
-        r@ gate@
-        dup r@ gate-x swap gotoxy gate-char emit
-        dup gate-width @ + wall-height mod r@ gate-x swap gotoxy space
-        1+
+        1 32 gate-char
     else
-        r@ gate@
-        dup r@ gate-x swap gotoxy space
-        dup gate-width @ +  wall-height mod r@ gate-x swap gotoxy gate-char emit
-        1-
-    then
+        -1 gate-char 32
+    then                                \ s:inc botchar topchar
+    r@ gate-xy gotoxy emit              \ s:inc botchar
+    r@ gate-x r@ gate-end-y gotoxy emit \ s:inc
+    r@ gate@ +                          \ s:y
     wall-height mod r@ gate!
     r> drop ;
 
