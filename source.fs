@@ -1,4 +1,4 @@
-PAGE
+$1E screen page
 .( Loading WITCH )
 80 load
 
@@ -130,7 +130,7 @@ create player-sprite* 2 cells allot
     16 0 player-sprite !
     32 1 player-sprite !
     0 80   0 0 player-sprite @ 1 sprite
-    1 80 240 1 player-sprite @ 3 sprite ;
+    1 80 240 1 player-sprite @ 8 sprite ;
 
 \ Status Display
 
@@ -148,7 +148,12 @@ create player-sprite* 2 cells allot
     then ;
 
 : init-graphics ( -- )
-    97 load-chars 1 gmode 2 magnify page ;
+    97 load-chars
+    1 gmode
+    2 magnify
+    14 screen
+    16 0 do i 1 14 color loop
+    page ;
 
 \ Main Game Loop
 : witch ( -- )
