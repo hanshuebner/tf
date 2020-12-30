@@ -41,7 +41,6 @@ $8379 constant vdptimer
     sprvec ;
 : joydir* ( sprite# -- )
     dup joyvec sprvec ;
-    
 
 \ Load character set and sprites from binary blocks
 variable char-buffer 6 allot
@@ -57,9 +56,7 @@ variable char-buffer 6 allot
         then
     loop drop drop ;
 
-: init-graphics ( -- )
-    97 load-chars 1 gmode 2 magnify page
-    0 70 70 0 1 sprite 1 100 100 0 3 sprite ;
+\ Gates
 
 $A6 value gate-char
 22 value wall-height
@@ -95,9 +92,9 @@ variable gate-speed 10 gate-speed !
 : update-gate ( n -- )
     >r
     r@ 1 and if
-        1 32 gate-char
+        1 bl gate-char
     else
-        -1 gate-char 32
+        -1 gate-char bl
     then                                \ s:inc botchar topchar
     r@ gate-xy gotoxy emit              \ s:inc botchar
     r@ gate-x r@ gate-end-y gotoxy emit \ s:inc
@@ -108,17 +105,37 @@ variable gate-speed 10 gate-speed !
 : update-gates ( -- )
     4 0 do i update-gate loop ;
 
+\ Sprites
+
+create player-sprite* 2 cells allot
+: player-sprite ( n -- addr ) cells player-sprite* + ;
+
 : sprite-cycle ( -- n )
     vdptimer c@ 3 >> 3 and 2 << ;
 
+: p-set-sprite ( n player -- )
+    dup player-sprite @                 \ n player base
+    rot +                               \ player sprite
+    sprpat ;
+
 : process-sprites ( -- )
     0 joydir 1 joydir
-    0 2 sprmov
     sprite-cycle
-    dup 0 swap sprpat 1 swap sprpat ;
+    dup
+    0 p-set-sprite
+    1 p-set-sprite
+    0 2 sprmov ;
+
+: init-players ( -- )
+    16 0 player-sprite !
+    32 1 player-sprite !
+    0 80   0 0 player-sprite @ 1 sprite
+    1 80 240 1 player-sprite @ 3 sprite ;
+
+\ Status Display
 
 : display-status ( -- )
-    23 0 32 32 hchar
+    23 0 bl 32 hchar
     2 0 do
         i 8 * 23 gotoxy
         gate-char $f i undersprite if
@@ -130,16 +147,20 @@ variable gate-speed 10 gate-speed !
         ." Touch! "
     then ;
 
+: init-graphics ( -- )
+    97 load-chars 1 gmode 2 magnify page ;
+
 \ Main Game Loop
 : witch ( -- )
     init-graphics
+    init-players
     place-gates
     begin
         process-sprites
         display-status
         gate-cycle 0= if update-gates then
         key? case
-            32 of leave endof
+            bl of leave endof
             ascii + of 1 gate-speed +! endof
             ascii - of -1 gate-speed +! endof
         endcase
