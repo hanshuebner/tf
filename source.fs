@@ -4,6 +4,9 @@ $1E screen page
 
 $8379 constant vdptimer
 
+create player-sprite* 2 cells allot
+: player-sprite ( n -- addr ) cells player-sprite* + ;
+
 : axis-ok? ( delta value max -- flag )
     >r
     2dup r> = swap 1 = and              \ delta value flag
@@ -21,25 +24,43 @@ $8379 constant vdptimer
         2drop false
     then ;
 
-: joyvec ( sprite# -- dy dx )
+: joypat ( player# -- )
+    dup joyst $1E and
+    case
+        8 of 0 endof                    \ down
+        10 of 1 endof                   \ down left
+        2 of 2 endof                    \ left
+        18 of 3 endof                   \ up left
+        16 of 4 endof                   \ up
+        20 of 5 endof                   \ up right
+        4 of 6 endof                    \ right
+        12 of 7 endof                   \ down right
+        0
+    endcase
+    3 <<
+    swap player-sprite ! ;
+
+: joyvec ( player# -- dy dx )
     joyst dup
-    24 and case
+    24 and case                         \ y
         16 of -1 endof
         8 of 1 endof
         0 endcase
-    swap 6 and case
+    swap 6 and case                     \ x
         2 of -1 endof
         4 of 1 endof
         0 endcase ;
 
-: joydir ( sprite# -- )
+: joydir ( player# -- )
     dup >r
+    r@ joypat
     r@ joyvec
     2dup r> sprloc? movement-ok? not if
         2drop 0 0
     then
     sprvec ;
-: joydir* ( sprite# -- )
+
+: joydir* ( player# -- )
     dup joyvec sprvec ;
 
 \ Load character set and sprites from binary blocks
@@ -107,11 +128,8 @@ variable gate-speed 10 gate-speed !
 
 \ Sprites
 
-create player-sprite* 2 cells allot
-: player-sprite ( n -- addr ) cells player-sprite* + ;
-
 : sprite-cycle ( -- n )
-    vdptimer c@ 3 >> 3 and 2 << ;
+    vdptimer c@ 3 >> 1 and 2 << ;
 
 : p-set-sprite ( n player -- )
     dup player-sprite @                 \ n player base
@@ -127,8 +145,8 @@ create player-sprite* 2 cells allot
     0 2 sprmov ;
 
 : init-players ( -- )
-    16 0 player-sprite !
-    32 1 player-sprite !
+    0 0 player-sprite !
+    0 1 player-sprite !
     0 80   0 0 player-sprite @ 1 sprite
     1 80 240 1 player-sprite @ 8 sprite ;
 
